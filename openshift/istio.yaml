@@ -1,0 +1,30 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: dotnet-tracing
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "dotnet-tracing-istio-system.apps.ocp1.example.com"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: dotnet-tracing
+spec:
+  hosts:
+    - "dotnet-tracing-istio-system.apps.ocp1.example.com"
+  gateways:
+    - dotnet-tracing
+  http:
+    - route:
+        - destination:
+            host: dotnet-service-a
+            port:
+              number: 8080

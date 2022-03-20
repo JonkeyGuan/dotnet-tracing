@@ -1,0 +1,89 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dotnet-service-a
+  labels:
+    app: dotnet-service-a
+spec:
+  ports:
+    - port: 8080
+      name: http
+  selector:
+    app: dotnet-service-a
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dotnet-service-a
+  labels:
+    app: dotnet-service-a
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dotnet-service-a
+  template:
+    metadata:
+      labels:
+        app: dotnet-service-a
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+        - name: app
+          image: image-registry.openshift-image-registry.svc:5000/dotnet-tracing/dotnet-service-a
+          env:
+            - name: SERVICE_URL
+              value: http://dotnet-service-b:8080/message
+            - name: JAEGER_HOST
+              value: jaeger-agent.istio-system.svc.cluster.local
+            - name: JAEGER_PORT
+              value: "6831"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dotnet-service-b
+  labels:
+    app: dotnet-service-b
+spec:
+  ports:
+    - port: 8080
+      name: http
+      targetPort: 8080
+  selector:
+    app: dotnet-service-b
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dotnet-service-b
+  labels:
+    app: dotnet-service-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dotnet-service-b
+  template:
+    metadata:
+      labels:
+        app: dotnet-service-b
+      annotations:
+        sidecar.istio.io/inject: "true"
+    spec:
+      containers:
+        - name: app
+          image: image-registry.openshift-image-registry.svc:5000/dotnet-tracing/dotnet-service-b
+          env:
+            - name: JAEGER_HOST
+              value: jaeger-agent.istio-system.svc.cluster.local
+            - name: JAEGER_PORT
+              value: "6831"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
